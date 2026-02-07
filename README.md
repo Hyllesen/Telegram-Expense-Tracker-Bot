@@ -19,10 +19,11 @@ The bot extracts and logs expenses in the following format:
   "date": "YYYY-MM-DD",
   "item": "string",
   "amount": float,
-  "currency": "string",
   "paid_by": "string"
 }
 ```
+
+**Note:** Currency is not tracked. Google Sheets will handle formatting the amount as currency using its built-in number formatting.
 
 ## Prerequisites
 
@@ -30,7 +31,7 @@ The bot extracts and logs expenses in the following format:
 2. **Telegram Bot Token** - Get from [@BotFather](https://t.me/botfather)
 3. **Google Gemini API Key** - Get from [Google AI Studio](https://makersuite.google.com/app/apikey)
 4. **Google Service Account** - For Sheets API access
-5. **Google Sheet** - Pre-created sheet with columns: Date | Item | Amount | Currency | Paid By
+5. **Google Sheet** - Pre-created sheet with columns: Date | Item | Amount | Paid By
 
 ## Quick Start
 

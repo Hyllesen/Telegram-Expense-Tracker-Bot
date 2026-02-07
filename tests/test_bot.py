@@ -14,7 +14,6 @@ def mock_gemini():
             'date': '2026-02-07',
             'item': 'Coffee',
             'amount': 5.50,
-            'currency': 'USD',
             'paid_by': 'Me'
         })
         mock.return_value = handler
@@ -28,8 +27,8 @@ def mock_sheets():
         handler = Mock()
         handler.add_expense = Mock(return_value=True)
         handler.get_recent_expenses = Mock(return_value=[
-            ['2026-02-07', 'Coffee', '5.50', 'USD', 'Me'],
-            ['2026-02-06', 'Lunch', '15.00', 'USD', 'John']
+            ['2026-02-07', 'Coffee', '5.50', 'Me'],
+            ['2026-02-06', 'Lunch', '15.00', 'John']
         ])
         mock.return_value = handler
         yield handler
@@ -54,6 +53,7 @@ def mock_update():
     update = Mock(spec=Update)
     update.effective_user = Mock(spec=User)
     update.effective_user.id = 12345
+    update.effective_user.first_name = "TestUser"
     update.message = Mock(spec=Message)
     update.message.reply_text = AsyncMock()
     return update
@@ -112,7 +112,7 @@ class TestExpenseBot:
         
         # Assertions
         assert mock_update.message.reply_text.call_count == 2  # Processing + confirmation
-        mock_gemini.analyze_content.assert_called_once_with(text="Coffee 5.50 USD")
+        mock_gemini.analyze_content.assert_called_once_with(text="Coffee 5.50 USD", default_paid_by="TestUser")
         mock_sheets.add_expense.assert_called_once()
     
     @pytest.mark.unit

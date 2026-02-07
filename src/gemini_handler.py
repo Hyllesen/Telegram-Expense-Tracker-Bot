@@ -7,7 +7,6 @@ from google import genai
 from google.genai import types
 
 from src.config import GEMINI_API_KEY, GEMINI_MODEL, IS_TESTING
-from src.constants import EXPENSE_EXTRACTION_PROMPT
 from src.logger import get_logger
 
 logger = get_logger(__name__)
@@ -29,18 +28,14 @@ EXPENSE_SCHEMA = {
         },
         "amount": {
             "type": "number",
-            "description": "Numeric amount of the expense"
-        },
-        "currency": {
-            "type": "string",
-            "description": "Currency code or name (e.g., USD, PHP, Peso)"
+            "description": "Numeric amount of the expense (no currency symbols)"
         },
         "paid_by": {
             "type": "string",
             "description": "Name of person who paid, or 'Me' if not specified"
         }
     },
-    "required": ["date", "item", "amount", "currency", "paid_by"]
+    "required": ["date", "item", "amount", "paid_by"]
 }
 
 
@@ -60,7 +55,8 @@ class GeminiHandler:
         self,
         text: Optional[str] = None,
         media_path: Optional[str] = None,
-        media_type: Optional[str] = None
+        media_type: Optional[str] = None,
+        default_paid_by: str = "Me"
     ) -> Dict[str, Any]:
         """
         Analyze content (text, image, or audio) and extract expense data.
@@ -69,6 +65,7 @@ class GeminiHandler:
             text: Text input or caption
             media_path: Path to media file (image or audio)
             media_type: Type of media ('image' or 'audio')
+            default_paid_by: Name to use if no one is mentioned (default: "Me")
             
         Returns:
             Dictionary containing extracted expense data
@@ -77,16 +74,20 @@ class GeminiHandler:
             Exception: If analysis fails after retries
         """
         try:
-            logger.info(f"Analyzing content - text: {bool(text)}, media: {media_type}")
+            logger.info(f"Analyzing content - text: {bool(text)}, media: {media_type}, default_paid_by: {default_paid_by}")
+            
+            # Generate prompt with dynamic default
+            from src.constants import get_expense_extraction_prompt
+            prompt = get_expense_extraction_prompt(default_paid_by)
             
             # Build content parts
             content_parts = []
             
             # Add text if provided
             if text:
-                content_parts.append(types.Part.from_text(text=f"{EXPENSE_EXTRACTION_PROMPT}\n\nUser input: {text}"))
+                content_parts.append(types.Part.from_text(text=f"{prompt}\n\nUser input: {text}"))
             else:
-                content_parts.append(types.Part.from_text(text=EXPENSE_EXTRACTION_PROMPT))
+                content_parts.append(types.Part.from_text(text=prompt))
             
             # Handle media
             if media_path and media_type:

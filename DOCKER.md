@@ -485,6 +485,136 @@ docker-compose build
 docker-compose up -d
 ```
 
+### Issue: "ModuleNotFoundError: No module named 'src'"
+
+**Problem:** Container crashes on startup with:
+```
+telegram-expense-bot | Traceback (most recent call last):
+telegram-expense-bot | File "/app/src/main.py", line 4, in <module>
+telegram-expense-bot | from src.bot import ExpenseBot
+telegram-expense-bot | ModuleNotFoundError: No module named 'src'
+telegram-expense-bot exited with code 1 (restarting)
+```
+
+**Solution:** Already fixed! The Dockerfile now uses `python -m src.main` instead of `python src/main.py`.
+
+**Why:** 
+- Running a file directly (`python src/main.py`) doesn't add the parent directory to Python's path
+- Using `-m` flag (`python -m src.main`) treats `src` as a module and properly resolves imports
+- The `src/__init__.py` file makes `src` a proper Python package
+
+**Dockerfile CMD:**
+```dockerfile
+# ✅ Correct (uses module syntax)
+CMD ["python", "-u", "-m", "src.main"]
+
+# ❌ Wrong (direct file execution)
+# CMD ["python", "-u", "src/main.py"]
+```
+
+**How to verify the fix:**
+```bash
+# Rebuild and test
+docker build -t ai-accounting-expense-bot .
+
+# Test imports work (should show config errors, not import errors)
+docker run --rm ai-accounting-expense-bot sh -c "TESTING=1 python -m src.main"
+
+# Should see: "Validating configuration..." not "ModuleNotFoundError"
+```
+
+### Issue: "[Errno 21] Is a directory: '/app/credentials/service_account.json'"
+
+**Problem:** Container fails to start with:
+```
+ERROR - Failed to initialize Google Sheets client: [Errno 21] Is a directory: '/app/credentials/service_account.json'
+```
+
+**Root Cause:** Docker creates a **directory** instead of mounting a file when the source file doesn't exist.
+
+**Solution:**
+
+1. **Check local file exists:**
+   ```bash
+   ls -la ./credentials/service_account.json
+   ```
+   
+   If it doesn't exist, you'll see:
+   ```
+   ls: ./credentials/service_account.json: No such file or directory
+   ```
+
+2. **Ensure correct filename:**
+   - The file MUST be named `service_account.json`
+   - It MUST be in the `credentials/` directory
+   - It MUST be a JSON file (not a directory)
+
+3. **Remove Docker-created directory:**
+   ```bash
+   # Stop container first
+   docker-compose down
+   
+   # Remove the directory Docker created
+   rm -rf ./credentials/service_account.json
+   
+   # Copy your actual service account file
+   cp ~/Downloads/your-service-account.json ./credentials/service_account.json
+   
+   # Verify it's a file
+   file ./credentials/service_account.json
+   # Should show: JSON data
+   
+   # Restart
+   docker-compose up -d
+   ```
+
+4. **Verify mount in container:**
+   ```bash
+   docker exec telegram-expense-bot cat /app/credentials/service_account.json
+   # Should show JSON content, not "Is a directory" error
+   ```
+
+**docker-compose.yml configuration:**
+```yaml
+volumes:
+  # Both paths should point to the same filename
+  - ./credentials/service_account.json:/app/credentials/service_account.json:ro
+  #  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  #  Local file (MUST exist)           Container path (matches .env)
+```
+
+**Why this happens:**
+- Docker volume mounts create the source automatically if it doesn't exist
+- But it creates a **directory**, not a file
+- This causes "Is a directory" errors when code tries to read it as a file
+
+### Issue: "Google Drive API has not been used in project"
+
+**Problem:** Container logs show:
+```
+ERROR - APIError: [403]: Google Drive API has not been used in project 876814589044 before or it is disabled.
+```
+
+**Solution:** This is NOT a code issue - it's a Google Cloud setup step.
+
+1. **Visit the link in the error message:**
+   ```
+   https://console.developers.google.com/apis/api/drive.googleapis.com/overview?project=YOUR_PROJECT_ID
+   ```
+
+2. **Click "Enable API"**
+
+3. **Wait 2-3 minutes** for propagation
+
+4. **Restart container:**
+   ```bash
+   docker-compose restart expense-bot
+   ```
+
+**Required Google Cloud APIs:**
+- ✅ Google Sheets API (for reading/writing sheets)
+- ✅ Google Drive API (for accessing shared sheets)
+
 ### Image Contents
 
 The production Docker image includes ONLY:

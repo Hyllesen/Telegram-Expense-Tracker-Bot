@@ -101,18 +101,48 @@ Bot is running!
 docker-compose logs expense-bot
 ```
 
-**File not found error?**
+**"[Errno 21] Is a directory" error?**
 ```bash
-# Verify filename is EXACT
-ls -la credentials/
-# Should see: google_service_account.json
+# This means the credentials file doesn't exist locally
+# Docker created a directory instead
+
+# 1. Stop container
+docker-compose down
+
+# 2. Remove Docker-created directory
+rm -rf ./credentials/service_account.json
+
+# 3. Copy your actual service account file
+cp ~/Downloads/your-service-account.json ./credentials/service_account.json
+
+# 4. Verify it's a file (not directory)
+file ./credentials/service_account.json
+# Should show: JSON data
+
+# 5. Restart
+docker-compose up -d
+```
+
+**"Google Drive API not enabled" error?**
+```bash
+# Visit the link shown in the error message
+# Click "Enable API"
+# Wait 2-3 minutes
+docker-compose restart expense-bot
 ```
 
 **Sheet access denied?**
 - Open your Google Sheet
 - Click Share
-- Add service account email (from JSON)
+- Add service account email (from JSON file: `client_email` field)
 - Give Editor access
+
+**File not found error?**
+```bash
+# Verify filename matches docker-compose.yml
+ls -la credentials/
+# Should see: service_account.json (NOT google_service_account.json)
+```
 
 ## Useful Commands
 
@@ -145,10 +175,12 @@ docker-compose up -d
 ai-accounting/
 ├── .env                    ✓ Your credentials
 ├── credentials/
-│   └── google_service_account.json  ✓ Service account key
+│   └── service_account.json  ✓ Service account key (file, not directory!)
 ├── docker-compose.yml      ✓ Already configured
 └── Dockerfile              ✓ Already configured
 ```
+
+**Important:** The credentials file MUST be named `service_account.json` and must be a JSON file, not a directory.
 
 ## Success!
 

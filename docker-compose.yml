@@ -17,9 +17,9 @@ services:
     # Mount service account credentials
     volumes:
       # Mount specific service account JSON file (not entire directory)
-      # Local: ./credentials/google_service_account.json
+      # Local: ./credentials/service_account.json
       # Container: /app/credentials/service_account.json
-      - ./credentials/google_service_account.json:/app/credentials/service_account.json:ro
+      - ./credentials/service_account.json:/app/credentials/service_account.json:ro
       # Persist logs
       - ./logs:/app/logs
     

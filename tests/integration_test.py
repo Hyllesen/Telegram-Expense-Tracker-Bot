@@ -41,18 +41,18 @@ def test_text_to_sheets_flow(mock_client):
     
     # Mock Gemini response
     mock_response = Mock()
-    mock_response.text = '{"date": "2026-02-07", "item": "Coffee", "amount": 5.50, "currency": "USD", "paid_by": "Me"}'
+    mock_response.text = '{"date": "2026-02-07", "item": "Coffee", "amount": 5.50, "paid_by": "Me"}'
     
     mock_client.models.generate_content = Mock(return_value=mock_response)
     
     # Test Gemini extraction
     handler = GeminiHandler()
-    result = handler.analyze_content(text="Coffee 5.50 USD")
+    result = handler.analyze_content(text="Coffee 5.50")
     
     # Assertions
     assert result['item'] == 'Coffee'
     assert result['amount'] == 5.50
-    assert result['currency'] == 'USD'
+    assert result['paid_by'] == 'Me'
 
 
 @pytest.mark.integration
@@ -88,7 +88,6 @@ def test_sheets_integration(mock_authorize, mock_creds):
         'date': '2026-02-07',
         'item': 'Coffee',
         'amount': 5.50,
-        'currency': 'USD',
         'paid_by': 'Stefan'
     }
     
@@ -108,7 +107,7 @@ def test_image_processing_flow(mock_client, sample_image):
     
     # Mock Gemini response
     mock_response = Mock()
-    mock_response.text = '{"date": "2026-02-07", "item": "Groceries", "amount": 353.50, "currency": "PHP", "paid_by": "Tine"}'
+    mock_response.text = '{"date": "2026-02-07", "item": "Groceries", "amount": 353.50, "paid_by": "Tine"}'
     
     mock_client.models.generate_content = Mock(return_value=mock_response)
     
@@ -123,7 +122,7 @@ def test_image_processing_flow(mock_client, sample_image):
     # Assertions
     assert 'item' in result
     assert 'amount' in result
-    assert 'currency' in result
+    assert 'paid_by' in result
 
 
 @pytest.mark.integration
@@ -138,7 +137,7 @@ def test_audio_processing_flow(mock_client, sample_audio):
     
     # Mock Gemini response
     mock_response = Mock()
-    mock_response.text = '{"date": "2026-02-07", "item": "Bananas", "amount": 100, "currency": "Peso", "paid_by": "Stefan"}'
+    mock_response.text = '{"date": "2026-02-07", "item": "Bananas", "amount": 100, "paid_by": "Stefan"}'
     
     mock_client.models.generate_content = Mock(return_value=mock_response)
     
@@ -173,7 +172,7 @@ def test_paid_by_extraction_variations():
         for text, expected_paid_by in test_cases:
             # Mock response based on expected result
             mock_response = Mock()
-            mock_response.text = f'{{"date": "2026-02-07", "item": "Item", "amount": 10, "currency": "USD", "paid_by": "{expected_paid_by}"}}'
+            mock_response.text = f'{{"date": "2026-02-07", "item": "Item", "amount": 10, "paid_by": "{expected_paid_by}"}}'
             
             mock_client.models.generate_content = Mock(return_value=mock_response)
             
@@ -192,7 +191,7 @@ def test_end_to_end_mock_flow():
                 
                 # Setup Gemini mock
                 mock_response = Mock()
-                mock_response.text = '{"date": "2026-02-07", "item": "Test Item", "amount": 99.99, "currency": "USD", "paid_by": "TestUser"}'
+                mock_response.text = '{"date": "2026-02-07", "item": "Test Item", "amount": 99.99, "paid_by": "TestUser"}'
                 
                 mock_gemini_client.models.generate_content = Mock(return_value=mock_response)
                 

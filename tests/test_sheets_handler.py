@@ -77,7 +77,6 @@ class TestSheetsHandler:
             'date': '2026-02-07',
             'item': 'Coffee',
             'amount': 5.50,
-            'currency': 'USD',
             'paid_by': 'Stefan'
         }
         
@@ -91,7 +90,7 @@ class TestSheetsHandler:
         # Check row format
         call_args = mock_worksheet.append_row.call_args
         row = call_args[0][0]
-        assert row == ['2026-02-07', 'Coffee', 5.50, 'USD', 'Stefan']
+        assert row == ['2026-02-07', 'Coffee', 5.50, 'Stefan']
     
     @pytest.mark.unit
     def test_add_expense_defaults(self, sheets_handler):
@@ -114,8 +113,7 @@ class TestSheetsHandler:
         assert result is True
         call_args = mock_worksheet.append_row.call_args
         row = call_args[0][0]
-        assert row[3] == ''  # Currency defaults to empty
-        assert row[4] == 'Me'  # Paid by defaults to 'Me'
+        assert row[3] == 'Me'  # Paid by defaults to 'Me'
     
     @pytest.mark.unit
     def test_get_recent_expenses(self, sheets_handler):
@@ -123,10 +121,10 @@ class TestSheetsHandler:
         # Mock worksheet with data
         mock_worksheet = Mock()
         mock_worksheet.get_all_values.return_value = [
-            ['Date', 'Item', 'Amount', 'Currency', 'Paid By'],  # Header
-            ['2026-02-05', 'Coffee', '5.50', 'USD', 'Me'],
-            ['2026-02-06', 'Lunch', '15.00', 'USD', 'John'],
-            ['2026-02-07', 'Dinner', '25.00', 'USD', 'Sarah']
+            ['Date', 'Item', 'Amount', 'Paid By'],  # Header
+            ['2026-02-05', 'Coffee', '5.50', 'Me'],
+            ['2026-02-06', 'Lunch', '15.00', 'John'],
+            ['2026-02-07', 'Dinner', '25.00', 'Sarah']
         ]
         
         sheets_handler.get_sheet = Mock(return_value=mock_worksheet)
@@ -145,7 +143,7 @@ class TestSheetsHandler:
         # Mock empty worksheet
         mock_worksheet = Mock()
         mock_worksheet.get_all_values.return_value = [
-            ['Date', 'Item', 'Amount', 'Currency', 'Paid By']  # Only header
+            ['Date', 'Item', 'Amount', 'Paid By']  # Only header
         ]
         
         sheets_handler.get_sheet = Mock(return_value=mock_worksheet)
@@ -161,7 +159,7 @@ class TestSheetsHandler:
         """Test sheet verification with existing headers."""
         # Mock worksheet
         mock_worksheet = Mock()
-        mock_worksheet.row_values.return_value = ['Date', 'Item', 'Amount', 'Currency', 'Paid By']
+        mock_worksheet.row_values.return_value = ['Date', 'Item', 'Amount', 'Paid By']
         
         sheets_handler.get_sheet = Mock(return_value=mock_worksheet)
         

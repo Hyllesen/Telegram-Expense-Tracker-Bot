@@ -70,7 +70,7 @@ class SheetsHandler:
         Add expense row to Google Sheet.
         
         Args:
-            expense_data: Dictionary with keys: date, item, amount, currency, paid_by
+            expense_data: Dictionary with keys: date, item, amount, paid_by
             
         Returns:
             True if successful
@@ -84,12 +84,11 @@ class SheetsHandler:
             # Get worksheet
             worksheet = self.get_sheet()
             
-            # Format row: [Date, Item, Amount, Currency, Paid By]
+            # Format row: [Date, Item, Amount, Paid By]
             row = [
                 expense_data.get('date', ''),
                 expense_data.get('item', ''),
                 expense_data.get('amount', 0),
-                expense_data.get('currency', ''),
                 expense_data.get('paid_by', 'Me')
             ]
             
@@ -154,7 +153,7 @@ class SheetsHandler:
             # Check if header row exists
             headers = worksheet.row_values(1)
             
-            expected_headers = ['Date', 'Item', 'Amount', 'Currency', 'Paid By']
+            expected_headers = ['Date', 'Item', 'Amount', 'Paid By']
             
             if not headers:
                 logger.warning("Sheet has no headers. Creating header row...")

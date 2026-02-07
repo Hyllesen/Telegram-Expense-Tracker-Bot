@@ -95,15 +95,16 @@ class ExpenseBot:
         """Handle text messages (expense descriptions)."""
         try:
             user_id = update.effective_user.id
+            user_name = update.effective_user.first_name or "Me"
             text = update.message.text
             
-            logger.info(f"User {user_id} sent text: {text[:50]}...")
+            logger.info(f"User {user_id} ({user_name}) sent text: {text[:50]}...")
             
             # Send processing message
             await update.message.reply_text(MESSAGE_PROCESSING)
             
             # Extract expense data using Gemini
-            expense_data = self.gemini.analyze_content(text=text)
+            expense_data = self.gemini.analyze_content(text=text, default_paid_by=user_name)
             
             # Save to Google Sheets
             self.sheets.add_expense(expense_data)
@@ -122,9 +123,10 @@ class ExpenseBot:
         """Handle photo messages (receipt images)."""
         try:
             user_id = update.effective_user.id
+            user_name = update.effective_user.first_name or "Me"
             caption = update.message.caption or ""
             
-            logger.info(f"User {user_id} sent photo with caption: {caption[:50] if caption else 'None'}")
+            logger.info(f"User {user_id} ({user_name}) sent photo with caption: {caption[:50] if caption else 'None'}")
             
             # Send processing message
             await update.message.reply_text(MESSAGE_PROCESSING)
@@ -143,7 +145,8 @@ class ExpenseBot:
                 expense_data = self.gemini.analyze_content(
                     text=caption if caption else None,
                     media_path=tmp_path,
-                    media_type='image'
+                    media_type='image',
+                    default_paid_by=user_name
                 )
                 
                 # Save to Google Sheets
@@ -169,8 +172,9 @@ class ExpenseBot:
         """Handle voice messages (expense descriptions)."""
         try:
             user_id = update.effective_user.id
+            user_name = update.effective_user.first_name or "Me"
             
-            logger.info(f"User {user_id} sent voice message")
+            logger.info(f"User {user_id} ({user_name}) sent voice message")
             
             # Send processing message
             await update.message.reply_text(MESSAGE_PROCESSING)
@@ -187,7 +191,8 @@ class ExpenseBot:
                 # Extract expense data using Gemini
                 expense_data = self.gemini.analyze_content(
                     media_path=tmp_path,
-                    media_type='audio'
+                    media_type='audio',
+                    default_paid_by=user_name
                 )
                 
                 # Save to Google Sheets

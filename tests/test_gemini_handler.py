@@ -27,18 +27,17 @@ class TestGeminiHandler:
         """Test text-only expense extraction."""
         # Mock response
         mock_response = Mock()
-        mock_response.text = '{"date": "2026-02-07", "item": "Coffee", "amount": 5.50, "currency": "USD", "paid_by": "Me"}'
+        mock_response.text = '{"date": "2026-02-07", "item": "Coffee", "amount": 5.50, "paid_by": "Me"}'
         
         gemini_handler.client.models.generate_content = Mock(return_value=mock_response)
         
         # Test
-        result = gemini_handler.analyze_content(text="Coffee 5.50 USD")
+        result = gemini_handler.analyze_content(text="Coffee 5.50")
         
         # Assertions
         assert result['date'] == '2026-02-07'
         assert result['item'] == 'Coffee'
         assert result['amount'] == 5.50
-        assert result['currency'] == 'USD'
         assert result['paid_by'] == 'Me'
     
     @pytest.mark.unit
@@ -46,12 +45,12 @@ class TestGeminiHandler:
         """Test extraction of 'Paid By' field."""
         # Mock response
         mock_response = Mock()
-        mock_response.text = '{"date": "2026-02-07", "item": "Bananas", "amount": 100, "currency": "Peso", "paid_by": "Stefan"}'
+        mock_response.text = '{"date": "2026-02-07", "item": "Bananas", "amount": 100, "paid_by": "Stefan"}'
         
         gemini_handler.client.models.generate_content = Mock(return_value=mock_response)
         
         # Test
-        result = gemini_handler.analyze_content(text="Stefan paid for bananas 100 peso")
+        result = gemini_handler.analyze_content(text="Stefan paid for bananas 100")
         
         # Assertions
         assert result['paid_by'] == 'Stefan'
@@ -114,7 +113,7 @@ class TestGeminiHandler:
         """Test exponential backoff retry logic."""
         # Mock to fail twice, then succeed
         mock_response = Mock()
-        mock_response.text = '{"date": "2026-02-07", "item": "Coffee", "amount": 5.50, "currency": "USD", "paid_by": "Me"}'
+        mock_response.text = '{"date": "2026-02-07", "item": "Coffee", "amount": 5.50, "paid_by": "Me"}'
         
         gemini_handler.client.models.generate_content = Mock(
             side_effect=[Exception("API Error"), Exception("API Error"), mock_response]

@@ -17,7 +17,7 @@ Successfully implemented a production-ready Telegram bot that tracks expenses us
 - [x] Multimodal expense extraction (text, images, voice)
 - [x] Google Gemini AI integration
 - [x] Google Sheets automatic logging
-- [x] Smart "Paid By" extraction logic
+- [x] Smart "Paid By" extraction logic (defaults to Telegram user's name)
 - [x] Date auto-defaulting to today
 - [x] Configurable Gemini model (default: gemini-3-flash-preview)
 
@@ -94,7 +94,7 @@ ai-accounting/
 
 ### Core
 - `python-telegram-bot>=20.0` - Async Telegram bot framework
-- `google-generativeai>=0.3.0` - Google Gemini API
+- `google-genai>=0.2.0` - Google Gemini API (new unified SDK)
 - `gspread>=5.0` - Google Sheets integration
 - `python-dotenv>=1.0.0` - Environment variables
 - `google-auth>=2.0.0` - Google authentication
@@ -142,17 +142,17 @@ chmod +x start.sh
 
 ### Text Input
 ```
-User: Coffee at Starbucks 5.50 USD
+User: Coffee at Starbucks 5.50
 Bot: ✅ Expense Logged!
      📅 Date: 2026-02-07
      🛒 Item: Coffee at Starbucks
-     💰 Amount: 5.50 USD
+     💰 Amount: 5.50
      👤 Paid By: Me
 ```
 
 ### With "Paid By"
 ```
-User: Paid by Stefan: Bananas 100 peso
+User: Paid by Stefan: Bananas 100
 Bot: ✅ Expense Logged!
      👤 Paid By: Stefan
 ```
@@ -161,13 +161,13 @@ Bot: ✅ Expense Logged!
 ```
 User: [Sends receipt photo with caption "Paid by Tine"]
 Bot: ✅ Expense Logged!
-     💰 Amount: 353.50 PHP
+     💰 Amount: 353.50
      👤 Paid By: Tine
 ```
 
 ### Voice Note
 ```
-User: [Records "Stefan paid for bananas 100 pesos"]
+User: [Records "Stefan paid for bananas 100"]
 Bot: ✅ Expense Logged!
      🛒 Item: Bananas
      💰 Amount: 100 Peso
@@ -208,11 +208,25 @@ Telegram Input → Bot Handler → Gemini AI → Expense Data → Google Sheets 
 - ✅ Input validation
 - ✅ Error messages don't leak internals
 
+## Data Schema
+
+The bot extracts expenses in the following simplified format:
+
+```json
+{
+  "date": "YYYY-MM-DD",
+  "item": "string", 
+  "amount": float,
+  "paid_by": "string"
+}
+```
+
+**Currency Note:** The bot no longer tracks currency. Google Sheets can format amounts using its built-in currency formatting, allowing you to apply your desired currency format (USD, EUR, PHP, etc.) directly in the sheet.
+
 ## Future Enhancements (Optional)
 
 - [ ] Add expense editing/deletion
 - [ ] Generate expense reports (weekly/monthly)
-- [ ] Multi-currency conversion
 - [ ] Budget tracking and alerts
 - [ ] Export to CSV/PDF
 - [ ] Web dashboard

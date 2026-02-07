@@ -28,5 +28,5 @@ COPY src/ ./src/
 # Create logs directory
 RUN mkdir -p /app/logs
 
-# Run the bot
-CMD ["python", "-u", "src/main.py"]
+# Run the bot (using -m to run as module so imports work correctly)
+CMD ["python", "-u", "-m", "src.main"]
