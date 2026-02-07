@@ -34,9 +34,8 @@ def sample_audio(test_assets_dir):
 
 
 @pytest.mark.integration
-@patch('src.gemini_handler.genai.configure')
-@patch('src.gemini_handler.genai.GenerativeModel')
-def test_text_to_sheets_flow(mock_model, mock_configure):
+@patch('src.gemini_handler.client')
+def test_text_to_sheets_flow(mock_client):
     """Test complete flow: text input -> Gemini -> Sheets."""
     from src.gemini_handler import GeminiHandler
     
@@ -44,9 +43,7 @@ def test_text_to_sheets_flow(mock_model, mock_configure):
     mock_response = Mock()
     mock_response.text = '{"date": "2026-02-07", "item": "Coffee", "amount": 5.50, "currency": "USD", "paid_by": "Me"}'
     
-    mock_instance = Mock()
-    mock_instance.generate_content = Mock(return_value=mock_response)
-    mock_model.return_value = mock_instance
+    mock_client.models.generate_content = Mock(return_value=mock_response)
     
     # Test Gemini extraction
     handler = GeminiHandler()
@@ -101,9 +98,8 @@ def test_sheets_integration(mock_authorize, mock_creds):
 
 
 @pytest.mark.integration
-@patch('src.gemini_handler.genai.configure')
-@patch('src.gemini_handler.genai.GenerativeModel')
-def test_image_processing_flow(mock_model, mock_configure, sample_image):
+@patch('src.gemini_handler.client')
+def test_image_processing_flow(mock_client, sample_image):
     """Test image processing with Gemini."""
     from src.gemini_handler import GeminiHandler
     
@@ -114,9 +110,7 @@ def test_image_processing_flow(mock_model, mock_configure, sample_image):
     mock_response = Mock()
     mock_response.text = '{"date": "2026-02-07", "item": "Groceries", "amount": 353.50, "currency": "PHP", "paid_by": "Tine"}'
     
-    mock_instance = Mock()
-    mock_instance.generate_content = Mock(return_value=mock_response)
-    mock_model.return_value = mock_instance
+    mock_client.models.generate_content = Mock(return_value=mock_response)
     
     # Test
     handler = GeminiHandler()
@@ -134,31 +128,19 @@ def test_image_processing_flow(mock_model, mock_configure, sample_image):
 
 @pytest.mark.integration
 @pytest.mark.slow
-@patch('src.gemini_handler.genai.configure')
-@patch('src.gemini_handler.genai.GenerativeModel')
-@patch('src.gemini_handler.genai.upload_file')
-@patch('src.gemini_handler.genai.get_file')
-def test_audio_processing_flow(mock_get_file, mock_upload, mock_model, mock_configure, sample_audio):
+@patch('src.gemini_handler.client')
+def test_audio_processing_flow(mock_client, sample_audio):
     """Test audio processing with Gemini."""
     from src.gemini_handler import GeminiHandler
     
     if not sample_audio or not os.path.exists(sample_audio):
         pytest.skip("No sample audio available")
     
-    # Mock file upload
-    mock_file = Mock()
-    mock_file.name = 'uploaded_audio'
-    mock_file.state.name = 'ACTIVE'
-    mock_upload.return_value = mock_file
-    mock_get_file.return_value = mock_file
-    
     # Mock Gemini response
     mock_response = Mock()
     mock_response.text = '{"date": "2026-02-07", "item": "Bananas", "amount": 100, "currency": "Peso", "paid_by": "Stefan"}'
     
-    mock_instance = Mock()
-    mock_instance.generate_content = Mock(return_value=mock_response)
-    mock_model.return_value = mock_instance
+    mock_client.models.generate_content = Mock(return_value=mock_response)
     
     # Test
     handler = GeminiHandler()
@@ -170,7 +152,6 @@ def test_audio_processing_flow(mock_get_file, mock_upload, mock_model, mock_conf
     # Assertions
     assert 'item' in result
     assert 'amount' in result
-    mock_upload.assert_called_once()
 
 
 @pytest.mark.integration
@@ -186,64 +167,60 @@ def test_paid_by_extraction_variations():
         ("Lunch 25 peso", "Me"),
     ]
     
-    with patch('src.gemini_handler.genai.configure'):
-        with patch('src.gemini_handler.genai.GenerativeModel') as mock_model:
-            handler = GeminiHandler()
+    with patch('src.gemini_handler.client') as mock_client:
+        handler = GeminiHandler()
+        
+        for text, expected_paid_by in test_cases:
+            # Mock response based on expected result
+            mock_response = Mock()
+            mock_response.text = f'{{"date": "2026-02-07", "item": "Item", "amount": 10, "currency": "USD", "paid_by": "{expected_paid_by}"}}'
             
-            for text, expected_paid_by in test_cases:
-                # Mock response based on expected result
-                mock_response = Mock()
-                mock_response.text = f'{{"date": "2026-02-07", "item": "Item", "amount": 10, "currency": "USD", "paid_by": "{expected_paid_by}"}}'
-                
-                handler.model.generate_content = Mock(return_value=mock_response)
-                
-                result = handler.analyze_content(text=text)
-                assert result['paid_by'] == expected_paid_by, f"Failed for: {text}"
+            mock_client.models.generate_content = Mock(return_value=mock_response)
+            
+            result = handler.analyze_content(text=text)
+            assert result['paid_by'] == expected_paid_by, f"Failed for: {text}"
 
 
 @pytest.mark.integration
 def test_end_to_end_mock_flow():
     """Test complete end-to-end flow with all mocks."""
-    with patch('src.gemini_handler.genai.configure'):
-        with patch('src.gemini_handler.genai.GenerativeModel') as mock_gemini_model:
-            with patch('src.sheets_handler.Credentials.from_service_account_file'):
-                with patch('src.sheets_handler.gspread.authorize') as mock_gspread:
-                    from src.gemini_handler import GeminiHandler
-                    from src.sheets_handler import SheetsHandler
-                    
-                    # Setup Gemini mock
-                    mock_response = Mock()
-                    mock_response.text = '{"date": "2026-02-07", "item": "Test Item", "amount": 99.99, "currency": "USD", "paid_by": "TestUser"}'
-                    
-                    mock_gemini_instance = Mock()
-                    mock_gemini_instance.generate_content = Mock(return_value=mock_response)
-                    mock_gemini_model.return_value = mock_gemini_instance
-                    
-                    # Setup Sheets mock
-                    mock_worksheet = Mock()
-                    mock_worksheet.row_values.return_value = ['Date', 'Item', 'Amount', 'Currency', 'Paid By']
-                    mock_worksheet.append_row = Mock()
-                    
-                    mock_spreadsheet = Mock()
-                    mock_spreadsheet.sheet1 = mock_worksheet
-                    
-                    mock_client = Mock()
-                    mock_client.open = Mock(return_value=mock_spreadsheet)
-                    mock_gspread.return_value = mock_client
-                    
-                    # Test flow
-                    gemini = GeminiHandler()
-                    sheets = SheetsHandler()
-                    
-                    # 1. Extract expense
-                    expense = gemini.analyze_content(text="Test Item 99.99 USD paid by TestUser")
-                    
-                    # 2. Save to sheets
-                    result = sheets.add_expense(expense)
-                    
-                    # Assertions
-                    assert expense['item'] == 'Test Item'
-                    assert expense['amount'] == 99.99
-                    assert expense['paid_by'] == 'TestUser'
-                    assert result is True
-                    mock_worksheet.append_row.assert_called_once()
+    with patch('src.gemini_handler.client') as mock_gemini_client:
+        with patch('src.sheets_handler.Credentials.from_service_account_file'):
+            with patch('src.sheets_handler.gspread.authorize') as mock_gspread:
+                from src.gemini_handler import GeminiHandler
+                from src.sheets_handler import SheetsHandler
+                
+                # Setup Gemini mock
+                mock_response = Mock()
+                mock_response.text = '{"date": "2026-02-07", "item": "Test Item", "amount": 99.99, "currency": "USD", "paid_by": "TestUser"}'
+                
+                mock_gemini_client.models.generate_content = Mock(return_value=mock_response)
+                
+                # Setup Sheets mock
+                mock_worksheet = Mock()
+                mock_worksheet.row_values.return_value = ['Date', 'Item', 'Amount', 'Currency', 'Paid By']
+                mock_worksheet.append_row = Mock()
+                
+                mock_spreadsheet = Mock()
+                mock_spreadsheet.sheet1 = mock_worksheet
+                
+                mock_client = Mock()
+                mock_client.open = Mock(return_value=mock_spreadsheet)
+                mock_gspread.return_value = mock_client
+                
+                # Test flow
+                gemini = GeminiHandler()
+                sheets = SheetsHandler()
+                
+                # 1. Extract expense
+                expense = gemini.analyze_content(text="Test Item 99.99 USD paid by TestUser")
+                
+                # 2. Save to sheets
+                result = sheets.add_expense(expense)
+                
+                # Assertions
+                assert expense['item'] == 'Test Item'
+                assert expense['amount'] == 99.99
+                assert expense['paid_by'] == 'TestUser'
+                assert result is True
+                mock_worksheet.append_row.assert_called_once()

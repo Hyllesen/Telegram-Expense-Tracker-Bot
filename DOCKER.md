@@ -460,3 +460,44 @@ docker stats telegram-expense-bot
 ```
 
 That's it! Your bot is now running in Docker 🎉
+
+
+## Common Build Issues
+
+### Issue: "pytest.ini not found"
+
+**Problem:** Dockerfile tries to copy pytest.ini but it's excluded in .dockerignore.
+
+**Solution:** Already fixed! The Dockerfile no longer copies pytest.ini.
+
+**Why:** Tests should run BEFORE building the image, not inside the container. This keeps the production image clean and minimal.
+
+**Correct Workflow:**
+```bash
+# 1. Run tests locally first
+source venv/bin/activate
+pytest tests/ -v
+
+# 2. Build image (only if tests pass)
+docker-compose build
+
+# 3. Deploy
+docker-compose up -d
+```
+
+### Image Contents
+
+The production Docker image includes ONLY:
+- ✅ Python 3.10-slim
+- ✅ System dependencies (ffmpeg, git)
+- ✅ Python packages from requirements.txt
+- ✅ Application source code (src/)
+
+The image EXCLUDES:
+- ❌ Tests (tests/, test-assets/)
+- ❌ Test configs (pytest.ini)
+- ❌ Credentials (.env, credentials/)
+- ❌ Documentation (*.md files)
+- ❌ Development files (venv/, __pycache__/)
+
+This results in a secure, minimal production image (~200-300MB).

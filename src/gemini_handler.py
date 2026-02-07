@@ -3,16 +3,17 @@ import json
 import time
 from pathlib import Path
 from typing import Optional, Dict, Any
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
-from src.config import GEMINI_API_KEY, GEMINI_MODEL
+from src.config import GEMINI_API_KEY, GEMINI_MODEL, IS_TESTING
 from src.constants import EXPENSE_EXTRACTION_PROMPT
 from src.logger import get_logger
 
 logger = get_logger(__name__)
 
-# Initialize Gemini API
-genai.configure(api_key=GEMINI_API_KEY)
+# Initialize Gemini client (skip in test mode to avoid requiring API key)
+client = None if IS_TESTING else genai.Client(api_key=GEMINI_API_KEY)
 
 # Response schema for structured JSON output
 EXPENSE_SCHEMA = {
@@ -48,13 +49,11 @@ class GeminiHandler:
     
     def __init__(self):
         """Initialize the Gemini handler."""
-        self.model = genai.GenerativeModel(
-            model_name=GEMINI_MODEL,
-            generation_config={
-                "temperature": 0.1,  # Low temperature for consistent extraction
-                "response_mime_type": "application/json",
-            }
-        )
+        global client
+        if client is None and not IS_TESTING:
+            client = genai.Client(api_key=GEMINI_API_KEY)
+        self.client = client
+        self.model = GEMINI_MODEL
         logger.info(f"Initialized Gemini handler with model: {GEMINI_MODEL}")
     
     def analyze_content(
@@ -81,18 +80,22 @@ class GeminiHandler:
             logger.info(f"Analyzing content - text: {bool(text)}, media: {media_type}")
             
             # Build content parts
-            content_parts = [EXPENSE_EXTRACTION_PROMPT]
+            content_parts = []
             
             # Add text if provided
             if text:
-                content_parts.append(f"\nUser input: {text}")
+                content_parts.append(types.Part.from_text(text=f"{EXPENSE_EXTRACTION_PROMPT}\n\nUser input: {text}"))
+            else:
+                content_parts.append(types.Part.from_text(text=EXPENSE_EXTRACTION_PROMPT))
             
             # Handle media
             if media_path and media_type:
                 if media_type == "image":
-                    content_parts.append(self._process_image(media_path))
+                    image_part = self._process_image(media_path)
+                    content_parts.append(image_part)
                 elif media_type == "audio":
-                    content_parts.append(self._process_audio(media_path))
+                    audio_part = self._process_audio(media_path)
+                    content_parts.append(audio_part)
                 else:
                     raise ValueError(f"Unsupported media type: {media_type}")
             
@@ -113,7 +116,7 @@ class GeminiHandler:
             logger.error(f"Error analyzing content: {e}")
             raise
     
-    def _process_image(self, image_path: str) -> Any:
+    def _process_image(self, image_path: str) -> types.Part:
         """Process image file for Gemini API."""
         try:
             logger.debug(f"Processing image: {image_path}")
@@ -131,38 +134,25 @@ class GeminiHandler:
             else:
                 mime_type = 'image/jpeg'  # Default
             
-            # Create image part
-            image_part = {
-                "mime_type": mime_type,
-                "data": image_data
-            }
-            
-            return image_part
+            # Create image part using new SDK
+            return types.Part.from_bytes(data=image_data, mime_type=mime_type)
             
         except Exception as e:
             logger.error(f"Error processing image: {e}")
             raise
     
-    def _process_audio(self, audio_path: str) -> Any:
-        """Process audio file using Gemini File API."""
+    def _process_audio(self, audio_path: str) -> types.Part:
+        """Process audio file for Gemini API."""
         try:
             logger.debug(f"Processing audio: {audio_path}")
             
-            # Upload file using File API
-            audio_file = genai.upload_file(path=audio_path, mime_type="audio/ogg")
-            logger.info(f"Uploaded audio file: {audio_file.name}")
+            # Read audio file
+            with open(audio_path, "rb") as f:
+                audio_data = f.read()
             
-            # Wait for file to be processed
-            while audio_file.state.name == "PROCESSING":
-                logger.debug("Waiting for audio processing...")
-                time.sleep(2)
-                audio_file = genai.get_file(audio_file.name)
-            
-            if audio_file.state.name == "FAILED":
-                raise Exception("Audio file processing failed")
-            
-            logger.info("Audio file ready for processing")
-            return audio_file
+            # Create audio part using new SDK
+            logger.info("Audio file processed")
+            return types.Part.from_bytes(data=audio_data, mime_type="audio/ogg")
             
         except Exception as e:
             logger.error(f"Error processing audio: {e}")
@@ -173,7 +163,17 @@ class GeminiHandler:
         for attempt in range(max_retries):
             try:
                 logger.debug(f"Generation attempt {attempt + 1}/{max_retries}")
-                response = self.model.generate_content(content_parts)
+                
+                # Generate content using new SDK
+                response = self.client.models.generate_content(
+                    model=self.model,
+                    contents=types.Content(parts=content_parts),
+                    config=types.GenerateContentConfig(
+                        temperature=0.1,
+                        response_mime_type="application/json"
+                    )
+                )
+                
                 return response
                 
             except Exception as e:
