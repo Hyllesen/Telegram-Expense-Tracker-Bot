@@ -1,0 +1,63 @@
+# Example: docker-compose with additional services
+# This is an extended version showing how to add monitoring, etc.
+
+version: '3.8'
+
+services:
+  # Main expense bot
+  expense-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: telegram-expense-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./credentials:/app/credentials:ro
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - expense-bot-network
+
+  # Optional: Watchtower for auto-updates
+  # watchtower:
+  #   image: containrrr/watchtower
+  #   container_name: watchtower
+  #   restart: unless-stopped
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   environment:
+  #     - WATCHTOWER_CLEANUP=true
+  #     - WATCHTOWER_POLL_INTERVAL=3600
+  #   networks:
+  #     - expense-bot-network
+
+  # Optional: Log aggregator
+  # loki:
+  #   image: grafana/loki:latest
+  #   container_name: loki
+  #   ports:
+  #     - "3100:3100"
+  #   volumes:
+  #     - loki-data:/loki
+  #   networks:
+  #     - expense-bot-network
+
+networks:
+  expense-bot-network:
+    name: expense-bot-network
+    driver: bridge
+
+# volumes:
+#   loki-data:

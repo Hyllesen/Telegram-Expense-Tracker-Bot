@@ -1,0 +1,28 @@
+# Test messages for manual and automated testing
+
+# Basic text expenses
+Coffee at Starbucks 5.50 USD
+Lunch 25 PHP
+Groceries 150 peso
+
+# With "Paid By" information
+Paid by Stefan: Bananas 100 peso
+John paid for dinner 45.50 USD
+Tine bought fish for 100 PHP
+
+# Different formats
+Gas station $40
+Movie tickets - 20 EUR paid by Sarah
+Restaurant bill 1250 PHP - paid by me
+
+# Edge cases
+Paid 5 dollars
+Just 10 peso
+Coffee
+
+# Multiple items (should extract primary)
+Breakfast: eggs, bacon, coffee - 15 USD
+
+# With dates
+Yesterday bought milk 3.50 USD
+Jan 15 - paid 100 PHP for taxi
