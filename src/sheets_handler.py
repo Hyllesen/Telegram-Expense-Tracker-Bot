@@ -2,6 +2,7 @@
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 import gspread
+from gspread.utils import ValidationConditionType
 from google.oauth2.service_account import Credentials
 
 from src.config import GOOGLE_SHEETS_CREDS_FILE, GOOGLE_SHEET_NAME, SUMMARY_LIMIT
@@ -56,7 +57,7 @@ class SheetsHandler:
         worksheet.append_row(TOTAL_ROW_TINE, value_input_option='USER_ENTERED')
         worksheet.add_validation(
             range='D2:D',
-            condition_type='ONE_OF_LIST',
+            condition_type=ValidationConditionType.one_of_list,
             values=['Stefan', 'Tine'],
             inputMessage='Select who paid',
             strict=True
@@ -83,7 +84,7 @@ class SheetsHandler:
         try:
             worksheet.add_validation(
                 range='D3:D',
-                condition_type='ONE_OF_LIST',
+                condition_type=ValidationConditionType.one_of_list,
                 values=['Stefan', 'Tine'],
                 inputMessage='Select who paid',
                 strict=True
