@@ -55,6 +55,7 @@ I help you track expenses using AI. Just send me:
 
 I'll automatically extract and log your expenses to Google Sheets!
 
+Works in private chats and group chats. Add me to your group!
 Use /help to see more examples."""
 
 MESSAGE_HELP = """📖 **How to Use the Expense Tracker Bot**
@@ -72,6 +73,12 @@ MESSAGE_HELP = """📖 **How to Use the Expense Tracker Bot**
 **Voice Notes:**
 • Record: "Stefan paid 100 for bananas"
 • Or: "Bought fish for 75"
+
+**Group Chats:**
+• Add me to your family/group expense chat
+• Every message in the group is processed as an expense
+• The sender's name is used as "Paid By"
+• Works with text, photos, and voice messages
 
 **Commands:**
 • /start - Show welcome message

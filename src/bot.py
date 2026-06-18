@@ -28,6 +28,9 @@ from src.logger import get_logger
 
 logger = get_logger(__name__)
 
+# Message handlers that work in both private chats and group chats
+CHAT_FILTER = filters.ChatType.PRIVATE | filters.ChatType.GROUPS
+
 
 class ExpenseBot:
     """Telegram bot for expense tracking."""
@@ -45,22 +48,24 @@ class ExpenseBot:
     
     def _register_handlers(self):
         """Register all command and message handlers."""
-        # Command handlers
-        self.app.add_handler(CommandHandler("start", self.cmd_start))
-        self.app.add_handler(CommandHandler("help", self.cmd_help))
-        self.app.add_handler(CommandHandler("summary", self.cmd_summary))
+        # Command handlers (work in private and groups)
+        self.app.add_handler(CommandHandler("start", self.cmd_start, filters=CHAT_FILTER))
+        self.app.add_handler(CommandHandler("help", self.cmd_help, filters=CHAT_FILTER))
+        self.app.add_handler(CommandHandler("summary", self.cmd_summary, filters=CHAT_FILTER))
         
-        # Message handlers
-        self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_text))
-        self.app.add_handler(MessageHandler(filters.PHOTO, self.handle_photo))
-        self.app.add_handler(MessageHandler(filters.VOICE, self.handle_voice))
+        # Message handlers (work in private and groups)
+        self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & CHAT_FILTER, self.handle_text))
+        self.app.add_handler(MessageHandler(filters.PHOTO & CHAT_FILTER, self.handle_photo))
+        self.app.add_handler(MessageHandler(filters.VOICE & CHAT_FILTER, self.handle_voice))
         
         logger.info("Handlers registered")
     
     async def cmd_start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /start command."""
         try:
-            logger.info(f"User {update.effective_user.id} started bot")
+            chat_id = update.effective_chat.id
+            chat_type = update.effective_chat.type
+            logger.info(f"User {update.effective_user.id} started bot in chat {chat_id} ({chat_type})")
             await update.message.reply_text(MESSAGE_START)
         except Exception as e:
             logger.error(f"Error in /start: {e}")
@@ -69,7 +74,8 @@ class ExpenseBot:
     async def cmd_help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /help command."""
         try:
-            logger.info(f"User {update.effective_user.id} requested help")
+            chat_id = update.effective_chat.id
+            logger.info(f"User {update.effective_user.id} requested help in chat {chat_id}")
             await update.message.reply_text(MESSAGE_HELP, parse_mode='Markdown')
         except Exception as e:
             logger.error(f"Error in /help: {e}")
@@ -78,7 +84,8 @@ class ExpenseBot:
     async def cmd_summary(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /summary command."""
         try:
-            logger.info(f"User {update.effective_user.id} requested summary")
+            chat_id = update.effective_chat.id
+            logger.info(f"User {update.effective_user.id} requested summary in chat {chat_id}")
             
             # Get recent expenses from sheet
             expenses = self.sheets.get_recent_expenses()
@@ -96,9 +103,10 @@ class ExpenseBot:
         try:
             user_id = update.effective_user.id
             user_name = update.effective_user.first_name or "Me"
+            chat_id = update.effective_chat.id
             text = update.message.text
             
-            logger.info(f"User {user_id} ({user_name}) sent text: {text[:50]}...")
+            logger.info(f"User {user_id} ({user_name}) sent text in chat {chat_id}: {text[:50]}...")
             
             # Send processing message
             await update.message.reply_text(MESSAGE_PROCESSING)
@@ -124,9 +132,10 @@ class ExpenseBot:
         try:
             user_id = update.effective_user.id
             user_name = update.effective_user.first_name or "Me"
+            chat_id = update.effective_chat.id
             caption = update.message.caption or ""
             
-            logger.info(f"User {user_id} ({user_name}) sent photo with caption: {caption[:50] if caption else 'None'}")
+            logger.info(f"User {user_id} ({user_name}) sent photo in chat {chat_id}: {caption[:50] if caption else 'None'}")
             
             # Send processing message
             await update.message.reply_text(MESSAGE_PROCESSING)
@@ -173,8 +182,9 @@ class ExpenseBot:
         try:
             user_id = update.effective_user.id
             user_name = update.effective_user.first_name or "Me"
+            chat_id = update.effective_chat.id
             
-            logger.info(f"User {user_id} ({user_name}) sent voice message")
+            logger.info(f"User {user_id} ({user_name}) sent voice message in chat {chat_id}")
             
             # Send processing message
             await update.message.reply_text(MESSAGE_PROCESSING)

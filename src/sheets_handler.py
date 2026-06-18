@@ -1,5 +1,6 @@
 """Google Sheets handler for expense logging."""
-from typing import Dict, Any, List
+from datetime import datetime
+from typing import Dict, Any, List, Optional
 import gspread
 from google.oauth2.service_account import Credentials
 
@@ -36,10 +37,18 @@ class SheetsHandler:
             logger.error(f"Failed to initialize Google Sheets client: {e}")
             raise
     
-    def get_sheet(self):
+    def _get_month_worksheet_name(self) -> str:
+        """Get worksheet name for the current month (e.g. '2026-06')."""
+        return datetime.now().strftime('%Y-%m')
+
+    def get_sheet(self, worksheet_name: Optional[str] = None) -> gspread.Worksheet:
         """
-        Get the configured Google Sheet.
+        Get the monthly worksheet from the configured Google Sheet.
+        Creates the worksheet if it doesn't exist yet.
         
+        Args:
+            worksheet_name: Name of the worksheet to get, defaults to current month (YYYY-MM)
+            
         Returns:
             Worksheet object
             
@@ -47,19 +56,26 @@ class SheetsHandler:
             Exception: If sheet cannot be accessed
         """
         try:
-            logger.debug(f"Accessing sheet: {GOOGLE_SHEET_NAME}")
+            if worksheet_name is None:
+                worksheet_name = self._get_month_worksheet_name()
             
-            # Open sheet by name
+            logger.debug(f"Accessing spreadsheet: {GOOGLE_SHEET_NAME}, worksheet: {worksheet_name}")
+            
             spreadsheet = self.client.open(GOOGLE_SHEET_NAME)
             
-            # Get first worksheet
-            worksheet = spreadsheet.sheet1
+            try:
+                worksheet = spreadsheet.worksheet(worksheet_name)
+                logger.info(f"Found existing worksheet: {worksheet_name}")
+            except gspread.WorksheetNotFound:
+                logger.info(f"Creating new worksheet: {worksheet_name}")
+                worksheet = spreadsheet.add_worksheet(title=worksheet_name, rows=1000, cols=26)
+                worksheet.append_row(['Date', 'Item', 'Amount', 'Paid By'])
+                logger.info(f"Created worksheet: {worksheet_name} with header row")
             
-            logger.info(f"Successfully accessed sheet: {GOOGLE_SHEET_NAME}")
             return worksheet
             
         except gspread.SpreadsheetNotFound:
-            logger.error(f"Sheet not found: {GOOGLE_SHEET_NAME}")
+            logger.error(f"Spreadsheet not found: {GOOGLE_SHEET_NAME}")
             raise Exception(f"Sheet '{GOOGLE_SHEET_NAME}' not found. Please check the name in .env")
         except Exception as e:
             logger.error(f"Error accessing sheet: {e}")
