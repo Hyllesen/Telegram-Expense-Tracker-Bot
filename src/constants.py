@@ -109,7 +109,7 @@ def format_confirmation_message(expense_data: dict) -> str:
     return f"""✅ **Expense Logged!**
 
 📅 Date: {expense_data.get('date', 'N/A')}
-🛒 Item: {expense_data.get('item', 'N/A')}
+🛒 Description: {expense_data.get('item', 'N/A')}
 💰 Amount: {expense_data.get('amount', 'N/A')}
 👤 Paid By: {expense_data.get('paid_by', 'Me')}
 

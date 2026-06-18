@@ -1,6 +1,6 @@
 """Unit tests for Sheets Handler."""
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch, MagicMock, call
 from datetime import datetime
 from src.sheets_handler import SheetsHandler
 
@@ -51,6 +51,46 @@ class TestSheetsHandler:
         assert parts[1].isdigit()
 
     @pytest.mark.unit
+    def test_format_new_worksheet(self, sheets_handler):
+        """Test that new worksheet is formatted with headers, totals, and dropdown."""
+        mock_worksheet = Mock()
+
+        sheets_handler._format_new_worksheet(mock_worksheet)
+
+        # Should append header row with formula
+        header_call = mock_worksheet.append_row.call_args_list[0]
+        assert header_call[0][0][0] == 'Date'
+        assert header_call[0][0][1] == 'Description'
+        assert header_call[0][0][5] == 'Total Stefan Paid'
+        assert 'SUMIF' in str(header_call[0][0][6])
+
+        # Should append Tine totals row
+        tine_call = mock_worksheet.append_row.call_args_list[1]
+        assert tine_call[0][0][5] == 'Total Tine Paid:'
+        assert 'SUMIF' in str(tine_call[0][0][6])
+
+        # Should add dropdown
+        mock_worksheet.add_validation.assert_called_once()
+
+    @pytest.mark.unit
+    def test_get_sheet_creates_new_monthly(self, sheets_handler):
+        """Test creating a new monthly worksheet with full formatting."""
+        mock_worksheet = Mock()
+        mock_spreadsheet = Mock()
+
+        sheets_handler.client.open = Mock(return_value=mock_spreadsheet)
+        mock_spreadsheet.worksheet = Mock(side_effect=Mock(side_effect=_raise_worksheet_not_found))
+        mock_spreadsheet.add_worksheet = Mock(return_value=mock_worksheet)
+
+        sheets_handler._format_new_worksheet = Mock()
+
+        result = sheets_handler.get_sheet(worksheet_name='2026-07')
+
+        assert result == mock_worksheet
+        mock_spreadsheet.add_worksheet.assert_called_once_with(title='2026-07', rows=1000, cols=26)
+        sheets_handler._format_new_worksheet.assert_called_once_with(mock_worksheet)
+
+    @pytest.mark.unit
     def test_get_sheet_existing_month(self, sheets_handler):
         """Test retrieving an existing monthly worksheet."""
         mock_worksheet = Mock()
@@ -58,30 +98,29 @@ class TestSheetsHandler:
 
         sheets_handler.client.open = Mock(return_value=mock_spreadsheet)
         mock_spreadsheet.worksheet = Mock(return_value=mock_worksheet)
+        sheets_handler._upgrade_sheet_format = Mock()
 
         result = sheets_handler.get_sheet(worksheet_name='2026-06')
 
         assert result == mock_worksheet
-        sheets_handler.client.open.assert_called_once()
         mock_spreadsheet.worksheet.assert_called_once_with('2026-06')
-        mock_spreadsheet.add_worksheet.assert_not_called()
+        sheets_handler._upgrade_sheet_format.assert_called_once_with(mock_worksheet)
 
     @pytest.mark.unit
-    def test_get_sheet_creates_monthly_worksheet(self, sheets_handler):
-        """Test creating a new monthly worksheet when it doesn't exist."""
+    def test_get_sheet_defaults_to_current_month(self, sheets_handler):
+        """Test that get_sheet() without args uses current month."""
         mock_worksheet = Mock()
         mock_spreadsheet = Mock()
 
         sheets_handler.client.open = Mock(return_value=mock_spreadsheet)
-        mock_spreadsheet.worksheet = Mock(side_effect=_raise_worksheet_not_found)
-        mock_spreadsheet.add_worksheet = Mock(return_value=mock_worksheet)
+        mock_spreadsheet.worksheet = Mock(return_value=mock_worksheet)
+        sheets_handler._upgrade_sheet_format = Mock()
 
-        result = sheets_handler.get_sheet(worksheet_name='2026-07')
+        current_month = datetime.now().strftime('%Y-%m')
+        result = sheets_handler.get_sheet()
 
         assert result == mock_worksheet
-        mock_spreadsheet.worksheet.assert_called_once_with('2026-07')
-        mock_spreadsheet.add_worksheet.assert_called_once_with(title='2026-07', rows=1000, cols=26)
-        mock_worksheet.append_row.assert_called_once_with(['Date', 'Item', 'Amount', 'Paid By'])
+        mock_spreadsheet.worksheet.assert_called_once_with(current_month)
 
     @pytest.mark.unit
     def test_get_sheet_spreadsheet_not_found(self, sheets_handler):
@@ -93,19 +132,27 @@ class TestSheetsHandler:
             sheets_handler.get_sheet()
 
     @pytest.mark.unit
-    def test_get_sheet_defaults_to_current_month(self, sheets_handler):
-        """Test that get_sheet() without args uses current month."""
+    def test_upgrade_sheet_format_skips_already_formatted(self, sheets_handler):
+        """Test that upgrade skips already-formatted sheets."""
         mock_worksheet = Mock()
-        mock_spreadsheet = Mock()
+        mock_worksheet.row_values.return_value = ['Date', 'Description', 'Amount', 'Paid By', '', 'Total Stefan Paid']
 
-        sheets_handler.client.open = Mock(return_value=mock_spreadsheet)
-        mock_spreadsheet.worksheet = Mock(return_value=mock_worksheet)
+        sheets_handler._upgrade_sheet_format(mock_worksheet)
 
-        current_month = datetime.now().strftime('%Y-%m')
-        result = sheets_handler.get_sheet()
+        mock_worksheet.update.assert_not_called()
+        mock_worksheet.insert_rows.assert_not_called()
 
-        assert result == mock_worksheet
-        mock_spreadsheet.worksheet.assert_called_once_with(current_month)
+    @pytest.mark.unit
+    def test_upgrade_sheet_format_upgrades_old(self, sheets_handler):
+        """Test that old-format sheets get upgraded."""
+        mock_worksheet = Mock()
+        mock_worksheet.row_values.return_value = ['Date', 'Item', 'Amount', 'Paid By']
+
+        sheets_handler._upgrade_sheet_format(mock_worksheet)
+
+        mock_worksheet.update.assert_called_once()
+        mock_worksheet.insert_rows.assert_called_once()
+        mock_worksheet.add_validation.assert_called_once()
 
     @pytest.mark.unit
     def test_add_expense(self, sheets_handler):
@@ -150,13 +197,14 @@ class TestSheetsHandler:
 
     @pytest.mark.unit
     def test_get_recent_expenses(self, sheets_handler):
-        """Test retrieving recent expenses."""
+        """Test retrieving recent expenses (skipping header and totals rows)."""
         mock_worksheet = Mock()
         mock_worksheet.get_all_values.return_value = [
-            ['Date', 'Item', 'Amount', 'Paid By'],
-            ['2026-02-05', 'Coffee', '5.50', 'Me'],
-            ['2026-02-06', 'Lunch', '15.00', 'John'],
-            ['2026-02-07', 'Dinner', '25.00', 'Sarah']
+            ['Date', 'Description', 'Amount', 'Paid By', '', 'Total Stefan Paid', '0'],
+            ['', '', '', '', '', 'Total Tine Paid:', '0'],
+            ['2026-02-05', 'Coffee', '5.50', 'Me', '', '', ''],
+            ['2026-02-06', 'Lunch', '15.00', 'John', '', '', ''],
+            ['2026-02-07', 'Dinner', '25.00', 'Sarah', '', '', '']
         ]
 
         sheets_handler.get_sheet = Mock(return_value=mock_worksheet)
@@ -169,10 +217,11 @@ class TestSheetsHandler:
 
     @pytest.mark.unit
     def test_get_recent_expenses_empty(self, sheets_handler):
-        """Test retrieving expenses from empty sheet."""
+        """Test retrieving expenses from sheet with only header and totals rows."""
         mock_worksheet = Mock()
         mock_worksheet.get_all_values.return_value = [
-            ['Date', 'Item', 'Amount', 'Paid By']
+            ['Date', 'Description', 'Amount', 'Paid By', '', 'Total Stefan Paid', '0'],
+            ['', '', '', '', '', 'Total Tine Paid:', '0']
         ]
 
         sheets_handler.get_sheet = Mock(return_value=mock_worksheet)
@@ -182,29 +231,13 @@ class TestSheetsHandler:
         assert result == []
 
     @pytest.mark.unit
-    def test_verify_sheet_access_with_headers(self, sheets_handler):
-        """Test sheet verification with existing headers."""
-        mock_worksheet = Mock()
-        mock_worksheet.row_values.return_value = ['Date', 'Item', 'Amount', 'Paid By']
-
-        sheets_handler.get_sheet = Mock(return_value=mock_worksheet)
+    def test_verify_sheet_access_success(self, sheets_handler):
+        """Test sheet verification passes."""
+        sheets_handler.get_sheet = Mock(return_value=Mock())
 
         result = sheets_handler.verify_sheet_access()
 
         assert result is True
-
-    @pytest.mark.unit
-    def test_verify_sheet_access_without_headers(self, sheets_handler):
-        """Test sheet verification creates headers if missing."""
-        mock_worksheet = Mock()
-        mock_worksheet.row_values.return_value = []
-
-        sheets_handler.get_sheet = Mock(return_value=mock_worksheet)
-
-        result = sheets_handler.verify_sheet_access()
-
-        assert result is True
-        mock_worksheet.append_row.assert_called_once()
 
     @pytest.mark.unit
     def test_verify_sheet_access_failure(self, sheets_handler):
