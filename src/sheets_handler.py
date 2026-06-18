@@ -56,7 +56,7 @@ class SheetsHandler:
         )
         worksheet.append_row(TOTAL_ROW_TINE, value_input_option='USER_ENTERED')
         worksheet.add_validation(
-            range='D2:D',
+            range='D3:D',
             condition_type=ValidationConditionType.one_of_list,
             values=['Stefan', 'Tine'],
             inputMessage='Select who paid',
@@ -67,20 +67,17 @@ class SheetsHandler:
     def _upgrade_sheet_format(self, worksheet: gspread.Worksheet):
         """Upgrade an old-format worksheet to the new full format."""
         headers = worksheet.row_values(1)
-        if len(headers) >= 6 and headers[1] != 'Item':
-            return
+        needs_upgrade = not (len(headers) >= 6 and headers[1] != 'Item')
 
-        logger.info(f"Upgrading worksheet '{worksheet.title}' to new format")
+        if needs_upgrade:
+            logger.info(f"Upgrading worksheet '{worksheet.title}' to new format")
+            worksheet.update('A1:G1', [FULL_HEADERS + [FORMULA_STEFAN]],
+                             value_input_option='USER_ENTERED')
+            worksheet.insert_rows([TOTAL_ROW_TINE], row=2,
+                                  value_input_option='USER_ENTERED')
+            logger.info(f"Worksheet '{worksheet.title}' upgraded successfully")
 
-        # Update header row: B1 "Item" → "Description", add E1/F1/G1
-        worksheet.update('A1:G1', [FULL_HEADERS + [FORMULA_STEFAN]],
-                         value_input_option='USER_ENTERED')
-
-        # Insert totals row at row 2 (shifts existing data down)
-        worksheet.insert_rows([TOTAL_ROW_TINE], row=2,
-                              value_input_option='USER_ENTERED')
-
-        # Add dropdown on Paid By column
+        # Always ensure the dropdown exists on Paid By column
         try:
             worksheet.add_validation(
                 range='D3:D',
@@ -90,9 +87,7 @@ class SheetsHandler:
                 strict=True
             )
         except Exception as e:
-            logger.warning(f"Could not add dropdown validation: {e}")
-
-        logger.info(f"Worksheet '{worksheet.title}' upgraded successfully")
+            logger.debug(f"Dropdown validation already exists or could not be added: {e}")
 
     def get_sheet(self, worksheet_name: Optional[str] = None) -> gspread.Worksheet:
         """
