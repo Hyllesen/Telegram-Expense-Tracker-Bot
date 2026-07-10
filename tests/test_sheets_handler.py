@@ -57,17 +57,17 @@ class TestSheetsHandler:
 
         sheets_handler._format_new_worksheet(mock_worksheet)
 
-        # Should append header row with formula
+        # Should append header row with formula (6 columns: no spacer)
         header_call = mock_worksheet.append_row.call_args_list[0]
         assert header_call[0][0][0] == 'Date'
         assert header_call[0][0][1] == 'Description'
-        assert header_call[0][0][5] == 'Total Stefan Paid'
-        assert 'SUMIF' in str(header_call[0][0][6])
+        assert header_call[0][0][4] == 'Total Stefan Paid'
+        assert 'SUMIF' in str(header_call[0][0][5])
 
-        # Should append Tine totals row
+        # Should append Tine totals row (6 columns, values at index 4-5)
         tine_call = mock_worksheet.append_row.call_args_list[1]
-        assert tine_call[0][0][5] == 'Total Tine Paid:'
-        assert 'SUMIF' in str(tine_call[0][0][6])
+        assert tine_call[0][0][4] == 'Total Tine Paid:'
+        assert 'SUMIF' in str(tine_call[0][0][5])
 
         # Should add dropdown
         mock_worksheet.add_validation.assert_called_once()
@@ -135,7 +135,7 @@ class TestSheetsHandler:
     def test_upgrade_sheet_format_skips_already_formatted(self, sheets_handler):
         """Test that upgrade skips already-formatted sheets."""
         mock_worksheet = Mock()
-        mock_worksheet.row_values.return_value = ['Date', 'Description', 'Amount', 'Paid By', '', 'Total Stefan Paid']
+        mock_worksheet.row_values.return_value = ['Date', 'Description', 'Amount', 'Paid By', 'Total Stefan Paid']
 
         sheets_handler._upgrade_sheet_format(mock_worksheet)
 
@@ -200,11 +200,11 @@ class TestSheetsHandler:
         """Test retrieving recent expenses (skipping header and totals rows)."""
         mock_worksheet = Mock()
         mock_worksheet.get_all_values.return_value = [
-            ['Date', 'Description', 'Amount', 'Paid By', '', 'Total Stefan Paid', '0'],
-            ['', '', '', '', '', 'Total Tine Paid:', '0'],
-            ['2026-02-05', 'Coffee', '5.50', 'Me', '', '', ''],
-            ['2026-02-06', 'Lunch', '15.00', 'John', '', '', ''],
-            ['2026-02-07', 'Dinner', '25.00', 'Sarah', '', '', '']
+            ['Date', 'Description', 'Amount', 'Paid By', 'Total Stefan Paid', '0'],
+            ['', '', '', '', 'Total Tine Paid:', '0'],
+            ['2026-02-05', 'Coffee', '5.50', 'Me', '', ''],
+            ['2026-02-06', 'Lunch', '15.00', 'John', '', ''],
+            ['2026-02-07', 'Dinner', '25.00', 'Sarah', '', '']
         ]
 
         sheets_handler.get_sheet = Mock(return_value=mock_worksheet)
@@ -220,8 +220,8 @@ class TestSheetsHandler:
         """Test retrieving expenses from sheet with only header and totals rows."""
         mock_worksheet = Mock()
         mock_worksheet.get_all_values.return_value = [
-            ['Date', 'Description', 'Amount', 'Paid By', '', 'Total Stefan Paid', '0'],
-            ['', '', '', '', '', 'Total Tine Paid:', '0']
+            ['Date', 'Description', 'Amount', 'Paid By', 'Total Stefan Paid', '0'],
+            ['', '', '', '', 'Total Tine Paid:', '0']
         ]
 
         sheets_handler.get_sheet = Mock(return_value=mock_worksheet)

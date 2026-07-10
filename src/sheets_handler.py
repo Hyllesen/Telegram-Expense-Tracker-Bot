@@ -17,11 +17,11 @@ SCOPES = [
 ]
 
 # Monthly worksheet layout
-FULL_HEADERS = ['Date', 'Description', 'Amount', 'Paid By', '', 'Total Stefan Paid']
+FULL_HEADERS = ['Date', 'Description', 'Amount', 'Paid By', 'Total Stefan Paid']
 FORMULA_STEFAN = '=SUMIF(D:D,"Stefan",C:C)'
 FORMULA_TINE = '=SUMIF(D:D,"Tine",C:C)'
 OLD_HEADERS = ['Date', 'Item', 'Amount', 'Paid By']
-TOTAL_ROW_TINE = ['', '', '', '', '', 'Total Tine Paid:', FORMULA_TINE]
+TOTAL_ROW_TINE = ['', '', '', '', 'Total Tine Paid:', FORMULA_TINE]
 
 
 class SheetsHandler:
