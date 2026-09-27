@@ -107,14 +107,14 @@ def test_image_processing_flow(mock_client, sample_image):
     
     # Mock Gemini response
     mock_response = Mock()
-    mock_response.text = '{"date": "2026-02-07", "item": "Groceries", "amount": 353.50, "paid_by": "Tine"}'
+    mock_response.text = '{"date": "2026-02-07", "item": "Groceries", "amount": 353.50, "paid_by": "Maria"}'
     
     mock_client.models.generate_content = Mock(return_value=mock_response)
     
     # Test
     handler = GeminiHandler()
     result = handler.analyze_content(
-        text="Paid by Tine",
+        text="Paid by Maria",
         media_path=sample_image,
         media_type='image'
     )
@@ -161,7 +161,7 @@ def test_paid_by_extraction_variations():
     test_cases = [
         ("Paid by Stefan: Coffee 5 USD", "Stefan"),
         ("John paid for dinner 50 USD", "John"),
-        ("Tine bought fish for 100 PHP", "Tine"),
+        ("Maria bought fish for 100 PHP", "Maria"),
         ("Coffee 5 dollars", "Me"),
         ("Lunch 25 peso", "Me"),
     ]

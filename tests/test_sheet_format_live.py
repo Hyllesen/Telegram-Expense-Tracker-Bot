@@ -52,10 +52,10 @@ def test_new_sheet_columns_are_correct():
         assert r1[5] == "Total Stefan Paid"
         assert r1[6] in ("650", "650.0"), f"F1 (Stefan total) expected 650, got '{r1[6]}'"
 
-        # Step 4: verify Tine totals row (columns E-F)
+        # Step 4: verify Maria totals row (columns E-F)
         r2 = {c.col: c.value for c in ws.range("A2:F2")}
-        assert r2[5] == "Total Tine Paid:"
-        assert r2[6] in ("0", "0.0"), f"F2 (Tine total) expected 0, got '{r2[6]}'"
+        assert r2[5] == "Total Maria Paid:"
+        assert r2[6] in ("0", "0.0"), f"F2 (Maria total) expected 0, got '{r2[6]}'"
 
         # Step 5: each expense in correct columns A-D
         for i, (exp_date, exp_item, exp_amount, exp_paid_by) in enumerate(expenses):

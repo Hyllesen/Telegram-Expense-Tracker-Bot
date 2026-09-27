@@ -209,12 +209,12 @@ The `test-assets/` folder contains real files for manual testing:
 
 ```bash
 # Test with sample images
-test-assets/TinePaidForThis353dot50PHP.jpeg
-test-assets/TinePaidForThis974PHP.jpeg
+test-assets/MariaPaidForThis353dot50PHP.jpeg
+test-assets/MariaPaidForThis974PHP.jpeg
 
 # Test with sample voice notes
 test-assets/StefanPaidForBananas100Peso.ogg
-test-assets/TineBoughtFishFor100Peso.ogg
+test-assets/MariaBoughtFishFor100Peso.ogg
 
 # Test with text messages
 test-assets/test_messages.txt

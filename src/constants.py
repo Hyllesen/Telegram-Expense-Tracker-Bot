@@ -31,7 +31,7 @@ RULES:
 4. **Paid By**: 
    - If text/caption/audio says "Paid by [Name]" or "Bought by [Name]" or "[Name] paid", extract [Name]
    - If no name mentioned, default to "{default_paid_by}"
-   - Common variations: "Stefan paid", "paid by Tine", "John bought this"
+   - Common variations: "Stefan paid", "paid by Maria", "John bought this"
 
 For images:
 - Read text from receipts (OCR)

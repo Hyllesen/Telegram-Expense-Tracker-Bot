@@ -64,9 +64,9 @@ class TestSheetsHandler:
         assert header_call[0][0][4] == 'Total Stefan Paid'
         assert 'SUMIF' in str(header_call[0][0][5])
 
-        # Should append Tine totals row (6 columns, values at index 4-5)
-        tine_call = mock_worksheet.append_row.call_args_list[1]
-        assert tine_call[0][0][4] == 'Total Tine Paid:'
+        # Should append Maria totals row (6 columns, values at index 4-5)
+        maria_call = mock_worksheet.append_row.call_args_list[1]
+        assert maria_call[0][0][4] == 'Total Maria Paid:'
         assert 'SUMIF' in str(tine_call[0][0][5])
 
         # Should add dropdown
@@ -201,7 +201,7 @@ class TestSheetsHandler:
         mock_worksheet = Mock()
         mock_worksheet.get_all_values.return_value = [
             ['Date', 'Description', 'Amount', 'Paid By', 'Total Stefan Paid', '0'],
-            ['', '', '', '', 'Total Tine Paid:', '0'],
+            ['', '', '', '', 'Total Maria Paid:', '0'],
             ['2026-02-05', 'Coffee', '5.50', 'Me', '', ''],
             ['2026-02-06', 'Lunch', '15.00', 'John', '', ''],
             ['2026-02-07', 'Dinner', '25.00', 'Sarah', '', '']
@@ -221,7 +221,7 @@ class TestSheetsHandler:
         mock_worksheet = Mock()
         mock_worksheet.get_all_values.return_value = [
             ['Date', 'Description', 'Amount', 'Paid By', 'Total Stefan Paid', '0'],
-            ['', '', '', '', 'Total Tine Paid:', '0']
+            ['', '', '', '', 'Total Maria Paid:', '0']
         ]
 
         sheets_handler.get_sheet = Mock(return_value=mock_worksheet)

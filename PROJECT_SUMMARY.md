@@ -75,10 +75,10 @@ ai-accounting/
 │   ├── test_sheets_handler.py # Sheets tests (9 tests)
 │   └── integration_test.py   # E2E tests (6 tests)
 ├── test-assets/              # Test data
-│   ├── TinePaidForThis353dot50PHP.jpeg
-│   ├── TinePaidForThis974PHP.jpeg
+│   ├── MariaPaidForThis353dot50PHP.jpeg
+│   ├── MariaPaidForThis974PHP.jpeg
 │   ├── StefanPaidForBananas100Peso.ogg
-│   ├── TineBoughtFishFor100Peso.ogg
+│   ├── MariaBoughtFishFor100Peso.ogg
 │   └── test_messages.txt
 ├── logs/                     # Application logs
 ├── README.md                 # User documentation
@@ -159,10 +159,10 @@ Bot: ✅ Expense Logged!
 
 ### Image Receipt
 ```
-User: [Sends receipt photo with caption "Paid by Tine"]
+User: [Sends receipt photo with caption "Paid by Maria"]
 Bot: ✅ Expense Logged!
      💰 Amount: 353.50
-     👤 Paid By: Tine
+     👤 Paid By: Maria
 ```
 
 ### Voice Note

@@ -8,7 +8,7 @@ Groceries 150 peso
 # With "Paid By" information
 Paid by Stefan: Bananas 100 peso
 John paid for dinner 45.50 USD
-Tine bought fish for 100 PHP
+Maria bought fish for 100 PHP
 
 # Different formats
 Gas station $40

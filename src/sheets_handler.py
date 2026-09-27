@@ -19,9 +19,9 @@ SCOPES = [
 # Monthly worksheet layout
 FULL_HEADERS = ['Date', 'Description', 'Amount', 'Paid By', 'Total Stefan Paid']
 FORMULA_STEFAN = '=SUMIF(D:D,"Stefan",C:C)'
-FORMULA_TINE = '=SUMIF(D:D,"Tine",C:C)'
+FORMULA_TINE = '=SUMIF(D:D,"Maria",C:C)'
 OLD_HEADERS = ['Date', 'Item', 'Amount', 'Paid By']
-TOTAL_ROW_TINE = ['', '', '', '', 'Total Tine Paid:', FORMULA_TINE]
+TOTAL_ROW_TINE = ['', '', '', '', 'Total Maria Paid:', FORMULA_TINE]
 
 
 class SheetsHandler:
@@ -58,7 +58,7 @@ class SheetsHandler:
         worksheet.add_validation(
             range='D3:D',
             condition_type=ValidationConditionType.one_of_list,
-            values=['Stefan', 'Tine'],
+            values=['Stefan', 'Maria'],
             inputMessage='Select who paid',
             strict=True
         )
@@ -82,7 +82,7 @@ class SheetsHandler:
             worksheet.add_validation(
                 range='D3:D',
                 condition_type=ValidationConditionType.one_of_list,
-                values=['Stefan', 'Tine'],
+                values=['Stefan', 'Maria'],
                 inputMessage='Select who paid',
                 strict=True
             )
