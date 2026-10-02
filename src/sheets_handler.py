@@ -22,6 +22,9 @@ FORMULA_STEFAN = '=SUMIF(D:D,"Stefan",C:C)'
 FORMULA_TINE = '=SUMIF(D:D,"Maria",C:C)'
 OLD_HEADERS = ['Date', 'Item', 'Amount', 'Paid By']
 TOTAL_ROW_TINE = ['', '', '', '', 'Total Maria Paid:', FORMULA_TINE]
+# Balance summary formula placed in the first data row (F3).
+# F1 = Stefan total, F2 = Maria total (see FORMULA_STEFAN / FORMULA_TINE).
+FORMULA_OWED = '=IF(F1>F2,"Maria owes Stefan "&(F1-F2)/2,"Stefan owes Maria "&(F2-F1)/2)'
 
 
 class SheetsHandler:
@@ -156,24 +159,16 @@ class SheetsHandler:
 
             worksheet.append_row(row, value_input_option='USER_ENTERED')
 
-            # Add owes/balance text to the first data row (row 3)
+            # Add owes/balance formula to the first data row (row 3).
+            # value_input_option='USER_ENTERED' is required so Google Sheets
+            # parses the leading '=' as a live formula (default is RAW, which
+            # stores it as literal text).
             try:
-                steven_total = worksheet.acell('F1').value
-                maria_total = worksheet.acell('F2').value
-                steven_total = float(steven_total) if steven_total else 0
-                maria_total = float(maria_total) if maria_total else 0
-
-                if steven_total > maria_total:
-                    owed = f'Maria owes Stefan {((steven_total - maria_total) / 2):.2f}'
-                elif maria_total > steven_total:
-                    owed = f'Stefan owes Maria {((maria_total - steven_total) / 2):.2f}'
-                else:
-                    owed = ''
-
-                worksheet.update(values=[[owed]], range_name='F3')
-                logger.info(f"Added owes/balance text to row 3: {owed}")
+                worksheet.update(values=[[FORMULA_OWED]], range_name='F3',
+                                 value_input_option='USER_ENTERED')
+                logger.info("Added owes/balance formula to row 3")
             except Exception as e:
-                logger.debug(f"Could not add owes/balance text: {e}")
+                logger.debug(f"Could not add owes/balance formula: {e}")
 
             logger.info(f"Successfully added expense row: {row}")
             return True
