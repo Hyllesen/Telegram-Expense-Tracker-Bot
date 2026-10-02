@@ -156,6 +156,14 @@ class SheetsHandler:
 
             worksheet.append_row(row, value_input_option='USER_ENTERED')
 
+            # Add owes/balance formula to the first data row (row 3)
+            try:
+                owed_formula = '=IF(F1>F2, "Maria owes Stefan " & (F1-F2)/2, "Stefan owes Maria " & (F2-F1)/2)'
+                worksheet.update('F3', owed_formula)
+                logger.info("Added owes/balance formula to row 3")
+            except Exception as e:
+                logger.debug(f"Could not add owes formula: {e}")
+
             logger.info(f"Successfully added expense row: {row}")
             return True
 
