@@ -67,7 +67,7 @@ class TestSheetsHandler:
         # Should append Maria totals row (6 columns, values at index 4-5)
         maria_call = mock_worksheet.append_row.call_args_list[1]
         assert maria_call[0][0][4] == 'Total Maria Paid:'
-        assert 'SUMIF' in str(tine_call[0][0][5])
+        assert 'SUMIF' in str(maria_call[0][0][5])
 
         # Should add dropdown
         mock_worksheet.add_validation.assert_called_once()
@@ -135,7 +135,7 @@ class TestSheetsHandler:
     def test_upgrade_sheet_format_skips_already_formatted(self, sheets_handler):
         """Test that upgrade skips already-formatted sheets."""
         mock_worksheet = Mock()
-        mock_worksheet.row_values.return_value = ['Date', 'Description', 'Amount', 'Paid By', 'Total Stefan Paid']
+        mock_worksheet.row_values.return_value = ['Date', 'Description', 'Amount', 'Paid By', 'Total Stefan Paid', '=SUMIF(D:D,"Stefan",C:C)']
 
         sheets_handler._upgrade_sheet_format(mock_worksheet)
 

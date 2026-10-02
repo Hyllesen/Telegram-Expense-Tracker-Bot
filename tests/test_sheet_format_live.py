@@ -5,7 +5,7 @@ Run with:  pytest tests/test_sheet_format_live.py -m slow -s
 """
 import os
 import pytest
-from src.sheets_handler import get_sheets_handler, FULL_HEADERS, FORMULA_STEFAN, TOTAL_ROW_TINE
+from src.sheets_handler import get_sheets_handler, FULL_HEADERS, FORMULA_STEFAN, TOTAL_ROW_MARIA
 
 
 @pytest.mark.slow
@@ -32,7 +32,7 @@ def test_new_sheet_columns_are_correct():
     try:
         # Step 1: format exactly like _format_new_worksheet
         ws.append_row(FULL_HEADERS + [FORMULA_STEFAN], value_input_option="USER_ENTERED")
-        ws.append_row(TOTAL_ROW_TINE, value_input_option="USER_ENTERED")
+        ws.append_row(TOTAL_ROW_MARIA, value_input_option="USER_ENTERED")
 
         # Step 2: add sample expenses
         expenses = [

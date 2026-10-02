@@ -19,11 +19,11 @@ SCOPES = [
 # Monthly worksheet layout
 FULL_HEADERS = ['Date', 'Description', 'Amount', 'Paid By', 'Total Stefan Paid']
 FORMULA_STEFAN = '=SUMIF(D:D,"Stefan",C:C)'
-FORMULA_TINE = '=SUMIF(D:D,"Maria",C:C)'
+FORMULA_MARIA = '=SUMIF(D:D,"Maria",C:C)'
 OLD_HEADERS = ['Date', 'Item', 'Amount', 'Paid By']
-TOTAL_ROW_TINE = ['', '', '', '', 'Total Maria Paid:', FORMULA_TINE]
+TOTAL_ROW_MARIA = ['', '', '', '', 'Total Maria Paid:', FORMULA_MARIA]
 # Balance summary formula placed in the first data row (F3).
-# F1 = Stefan total, F2 = Maria total (see FORMULA_STEFAN / FORMULA_TINE).
+# F1 = Stefan total, F2 = Maria total (see FORMULA_STEFAN / FORMULA_MARIA).
 FORMULA_OWED = '=IF(F1>F2,"Maria owes Stefan "&(F1-F2)/2,"Stefan owes Maria "&(F2-F1)/2)'
 
 
@@ -57,7 +57,7 @@ class SheetsHandler:
             FULL_HEADERS + [FORMULA_STEFAN],
             value_input_option='USER_ENTERED'
         )
-        worksheet.append_row(TOTAL_ROW_TINE, value_input_option='USER_ENTERED')
+        worksheet.append_row(TOTAL_ROW_MARIA, value_input_option='USER_ENTERED')
         worksheet.add_validation(
             range='D3:D',
             condition_type=ValidationConditionType.one_of_list,
@@ -76,7 +76,7 @@ class SheetsHandler:
             logger.info(f"Upgrading worksheet '{worksheet.title}' to new format")
             worksheet.update(values=[FULL_HEADERS + [FORMULA_STEFAN]], range_name='A1:G1',
                              value_input_option='USER_ENTERED')
-            worksheet.insert_rows([TOTAL_ROW_TINE], row=2,
+            worksheet.insert_rows([TOTAL_ROW_MARIA], row=2,
                                   value_input_option='USER_ENTERED')
             logger.info(f"Worksheet '{worksheet.title}' upgraded successfully")
 
