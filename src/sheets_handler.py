@@ -71,7 +71,7 @@ class SheetsHandler:
 
         if needs_upgrade:
             logger.info(f"Upgrading worksheet '{worksheet.title}' to new format")
-            worksheet.update('A1:G1', [FULL_HEADERS + [FORMULA_STEFAN]],
+            worksheet.update(values=[FULL_HEADERS + [FORMULA_STEFAN]], range_name='A1:G1',
                              value_input_option='USER_ENTERED')
             worksheet.insert_rows([TOTAL_ROW_TINE], row=2,
                                   value_input_option='USER_ENTERED')
@@ -156,13 +156,24 @@ class SheetsHandler:
 
             worksheet.append_row(row, value_input_option='USER_ENTERED')
 
-            # Add owes/balance formula to the first data row (row 3)
+            # Add owes/balance text to the first data row (row 3)
             try:
-                owed_formula = '=IF(F1>F2, "Maria owes Stefan " & (F1-F2)/2, "Stefan owes Maria " & (F2-F1)/2)'
-                worksheet.update('F3', owed_formula)
-                logger.info("Added owes/balance formula to row 3")
+                steven_total = worksheet.acell('F1').value
+                maria_total = worksheet.acell('F2').value
+                steven_total = float(steven_total) if steven_total else 0
+                maria_total = float(maria_total) if maria_total else 0
+
+                if steven_total > maria_total:
+                    owed = f'Maria owes Stefan {((steven_total - maria_total) / 2):.2f}'
+                elif maria_total > steven_total:
+                    owed = f'Stefan owes Maria {((maria_total - steven_total) / 2):.2f}'
+                else:
+                    owed = ''
+
+                worksheet.update(values=[[owed]], range_name='F3')
+                logger.info(f"Added owes/balance text to row 3: {owed}")
             except Exception as e:
-                logger.debug(f"Could not add owes formula: {e}")
+                logger.debug(f"Could not add owes/balance text: {e}")
 
             logger.info(f"Successfully added expense row: {row}")
             return True
